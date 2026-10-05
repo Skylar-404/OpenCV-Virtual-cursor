@@ -8,7 +8,7 @@ I vibe coded this entire program. Additionally, the program will be updated by m
      width="160"
      alt="C#">
 
-<h1>.NET Framework</h1>
+<!-- <h1>.NET Framework</h1> -->
 
 <p>
   <img src="https://img.shields.io/badge/Python-512BD4?style=flat-square&logo=python&logoColor=white">
