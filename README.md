@@ -4,7 +4,7 @@ I vibe coded this entire program. Additionally, the program will be updated by m
 
 <div align="center">
 
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/csharp/python-original.svg"
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg"
      width="160"
      alt="C#">
 
