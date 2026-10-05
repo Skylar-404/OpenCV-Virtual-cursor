@@ -1,6 +1,18 @@
 <h2>Introduction</h2>
 Hi, I vibe coded this entire program. The program will be updated and continue to improve and optimize for better user experience overtime.
 
+<h2>Setting up</h2>
+`Windows`
+- Create the virtual environment inside your project folder (cloned) folder.
+- Install the following modules. Type `pip install -r requirements.txt`. Feel free to inspect `requirements.txt` before you install.
+- Activate the venv, type `.venv\Scripts\activate`, to deactivate, type `deactivate`.
+- Run the program `Python main.py`
+
+`Linux`
+- Create the virtual environment inside your project folder (cloned) folder.
+- Install the following modules. Type `pip3 install -r requirements.txt`. Feel free to inspect `requirements.txt` before you install.
+- Activate the venv, type `Source .venv\bins\activate`, to deactivate, type `deactivate`.
+- Run the program `Python3 main.py`
 
 <div align="center">
 
