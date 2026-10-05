@@ -14,8 +14,9 @@ import math
 import os
 import sys
 
-# Force Qt to use X11/XWayland layer for clean window handling on Wayland desktop environments.
-os.environ["QT_QPA_PLATFORM"] = "xcb"
+# Force Qt to use X11/XWayland layer for clean window handling on Linux Wayland desktop environments.
+if sys.platform.startswith("linux"):
+    os.environ["QT_QPA_PLATFORM"] = "xcb"
 
 
 # ---------------------------------------------------------
@@ -82,42 +83,58 @@ def draw_hand_landmarks_rgb(rgb_frame, landmarks_px):
 
 
 # ---------------------------------------------------------
-# Low-Level Linux uinput Virtual Mouse Controller
+# Cross-Platform Hardware Mouse Controller (Linux uinput / Windows Win32 / PyAutoGUI)
 # ---------------------------------------------------------
 class MouseBackend:
     """
     Simulates hardware mouse movement, click-and-hold (dragging), and clicks.
-    Uses Linux /dev/uinput for native hardware cursor rendering on Wayland.
-    Falls back gracefully to PyAutoGUI if permissions are not yet configured.
+    - Linux: Uses /dev/uinput (via evdev) for native hardware cursor rendering.
+    - Windows: Uses native Win32 API (user32.dll via ctypes) for fast, smooth cursor control.
+    - Fallback: PyAutoGUI if OS-level drivers are unavailable.
     """
 
     def __init__(self):
         self.uinput_device = None
+        self.user32 = None
         self._is_left_down = False
-        try:
-            from evdev import UInput, ecodes as e
-            capabilities = {
-                e.EV_REL: [e.REL_X, e.REL_Y],
-                e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT]
-            }
-            self.uinput_device = UInput(
-                capabilities, name="GestureVirtualMouse")
-            print(
-                "[+] uinput virtual mouse initialized! (Native Wayland cursor active)")
-        except Exception as ex:
-            print(f"[*] uinput unavailable ({ex}). Using PyAutoGUI fallback.")
-            print("[*] To activate native Ubuntu cursor, run this once in terminal:")
-            print("    sudo chmod 666 /dev/uinput")
+        self.backend_type = "pyautogui"
+
+        if sys.platform.startswith("linux"):
+            try:
+                from evdev import UInput, ecodes as e
+                capabilities = {
+                    e.EV_REL: [e.REL_X, e.REL_Y],
+                    e.EV_KEY: [e.BTN_LEFT, e.BTN_RIGHT]
+                }
+                self.uinput_device = UInput(
+                    capabilities, name="GestureVirtualMouse")
+                self.backend_type = "uinput"
+                print(
+                    "[+] uinput virtual mouse initialized! (Native Wayland/Linux cursor active)")
+            except Exception as ex:
+                print(f"[*] uinput unavailable ({ex}). Using PyAutoGUI fallback.")
+                print("[*] To activate native Ubuntu cursor, run this once in terminal:")
+                print("    sudo chmod 666 /dev/uinput")
+        elif sys.platform.startswith("win"):
+            try:
+                import ctypes
+                self.user32 = ctypes.windll.user32
+                self.backend_type = "win32"
+                print("[+] Win32 native mouse controller initialized (Windows native)!")
+            except Exception as ex:
+                print(f"[*] Win32 mouse controller unavailable ({ex}). Using PyAutoGUI fallback.")
 
     def move(self, dx, dy, final_abs_x, final_abs_y):
-        """Move mouse using uinput relative packets or PyAutoGUI absolute positioning."""
-        if self.uinput_device is not None:
+        """Move mouse using uinput relative packets, Win32 API, or PyAutoGUI."""
+        if self.backend_type == "uinput":
             from evdev import ecodes as e
             if dx != 0:
                 self.uinput_device.write(e.EV_REL, e.REL_X, int(dx))
             if dy != 0:
                 self.uinput_device.write(e.EV_REL, e.REL_Y, int(dy))
             self.uinput_device.syn()
+        elif self.backend_type == "win32":
+            self.user32.SetCursorPos(int(final_abs_x), int(final_abs_y))
         else:
             pyautogui.moveTo(final_abs_x, final_abs_y)
 
@@ -125,11 +142,14 @@ class MouseBackend:
         """Hold down mouse button (for dragging/selecting)."""
         if button == 'left':
             self._is_left_down = True
-        if self.uinput_device is not None:
+        if self.backend_type == "uinput":
             from evdev import ecodes as e
             btn_code = e.BTN_LEFT if button == 'left' else e.BTN_RIGHT
             self.uinput_device.write(e.EV_KEY, btn_code, 1)
             self.uinput_device.syn()
+        elif self.backend_type == "win32":
+            flag = 0x0002 if button == 'left' else 0x0008  # MOUSEEVENTF_LEFTDOWN / RIGHTDOWN
+            self.user32.mouse_event(flag, 0, 0, 0, 0)
         else:
             pyautogui.mouseDown(button=button)
 
@@ -137,17 +157,20 @@ class MouseBackend:
         """Release held mouse button."""
         if button == 'left':
             self._is_left_down = False
-        if self.uinput_device is not None:
+        if self.backend_type == "uinput":
             from evdev import ecodes as e
             btn_code = e.BTN_LEFT if button == 'left' else e.BTN_RIGHT
             self.uinput_device.write(e.EV_KEY, btn_code, 0)
             self.uinput_device.syn()
+        elif self.backend_type == "win32":
+            flag = 0x0004 if button == 'left' else 0x0010  # MOUSEEVENTF_LEFTUP / RIGHTUP
+            self.user32.mouse_event(flag, 0, 0, 0, 0)
         else:
             pyautogui.mouseUp(button=button)
 
     def click(self, button='right'):
         """Send a momentary click."""
-        if self.uinput_device is not None:
+        if self.backend_type == "uinput":
             from evdev import ecodes as e
             btn_code = e.BTN_LEFT if button == 'left' else e.BTN_RIGHT
             self.uinput_device.write(e.EV_KEY, btn_code, 1)
@@ -155,6 +178,12 @@ class MouseBackend:
             time.sleep(0.015)
             self.uinput_device.write(e.EV_KEY, btn_code, 0)
             self.uinput_device.syn()
+        elif self.backend_type == "win32":
+            down_flag = 0x0008 if button == 'right' else 0x0002
+            up_flag = 0x0010 if button == 'right' else 0x0004
+            self.user32.mouse_event(down_flag, 0, 0, 0, 0)
+            time.sleep(0.015)
+            self.user32.mouse_event(up_flag, 0, 0, 0, 0)
         else:
             pyautogui.click(button=button)
 
@@ -167,6 +196,7 @@ class MouseBackend:
                 self.uinput_device.close()
             except Exception:
                 pass
+
 
 
 # ---------------------------------------------------------
@@ -248,9 +278,10 @@ class GestureTrackingThread(QThread):
             print(
                 f"[*] Target Screen Resolution: {self.screen_w}x{self.screen_h}")
 
-            cap = cv2.VideoCapture(0)
+            cam_backend = cv2.CAP_DSHOW if sys.platform.startswith("win") else cv2.CAP_ANY
+            cap = cv2.VideoCapture(0, cam_backend)
             if not cap.isOpened():
-                print("[!] Error: Could not open webcam (/dev/video0).")
+                print("[!] Error: Could not open webcam (camera index 0).")
                 return
 
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAM_WIDTH)
@@ -517,7 +548,7 @@ def main():
 
     print("=" * 60)
     print("      Optimized Hand Gesture Mouse Controller")
-    print("      with Click & Hold Dragging (uinput)")
+    print("      with Click & Hold Dragging")
     print("=" * 60)
     print("Actions:")
     print(" 1. Move Cursor:        Both Index & Middle fingers UP")
@@ -533,13 +564,16 @@ def main():
 
     app = QApplication(sys.argv)
 
-    # Automatically target primary monitor (1920x1080)
-    primary_screen = app.primaryScreen()
-    if primary_screen:
-        screen_geo = primary_screen.geometry()
-        screen_w, screen_h = screen_geo.width(), screen_geo.height()
-    else:
-        screen_w, screen_h = 1920, 1080
+    # Automatically target primary monitor resolution
+    try:
+        screen_w, screen_h = pyautogui.size()
+    except Exception:
+        primary_screen = app.primaryScreen()
+        if primary_screen:
+            screen_geo = primary_screen.geometry()
+            screen_w, screen_h = screen_geo.width(), screen_geo.height()
+        else:
+            screen_w, screen_h = 1920, 1080
 
     # Periodic timer to keep Python interpreter processing POSIX signals
     sig_timer = QTimer()

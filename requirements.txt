@@ -1,0 +1,14 @@
+# GUI and Camera Preview
+PyQt6>=6.4.0
+
+# Computer Vision & Machine Learning
+opencv-python>=4.8.0
+mediapipe>=0.10.0
+numpy>=1.24.0
+
+# Mouse Simulation & Automation
+pyautogui>=0.9.54
+
+# Native Linux hardware virtual mouse driver (uinput)
+# Note: Automatically ignored on Windows
+evdev>=1.6.0; sys_platform == "linux"
