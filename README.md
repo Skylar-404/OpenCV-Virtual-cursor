@@ -15,6 +15,13 @@ Hi, I vibe coded this entire program. The program will be updated and continue t
 - Activate the venv, type `Source .venv\bins\activate`, to deactivate, type `deactivate`.
 - Run the program `Python3 main.py`
 
+<h2>How to use</h2>
+
+- Required hardware component: Webcam, the program need to see your hand gesture.
+- Use your Index and Middle finger to move the cursor across the screen.
+- `Right Click`: Pinch your Thumb and Index finger.
+- `Left Click`: Pinch your Thumb and Middle finger.
+
 <div align="center">
 
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg"
