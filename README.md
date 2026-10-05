@@ -12,7 +12,7 @@ I vibe coded this entire program. Additionally, the program will be updated by m
 
 <p>
   <img src="https://img.shields.io/badge/C%23-512BD4?style=flat-square&logo=csharp&logoColor=white">
-  <img src="https://img.shields.io/badge/.NET%20Framework-4.8-512BD4?style=flat-square&logo=.net&logoColor=white">
+  <img src="https://img.shields.io/badge/OpenCV-512BD4?style=flat-square&logo=.net&logoColor=white">
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square">
 </p>
 
