@@ -17,7 +17,7 @@ Hi, I vibe coded this entire program. The program will be updated and continue t
 
 <h2>How to use</h2>
 
-- Required hardware component: Webcam, the program need to see your hand gesture.
+- Required hardware component: Webcam, the program needs to see your hand gesture (either left hand or right hand).
 - Use your Index and Middle finger to move the cursor across the screen.
 - `Right Click`: Pinch your Thumb and Index finger.
 - `Left Click`: Pinch your Thumb and Middle finger.
